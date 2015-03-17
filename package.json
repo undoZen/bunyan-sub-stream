@@ -1,0 +1,30 @@
+{
+  "name": "bunyan-sub-stream",
+  "version": "0.0.0",
+  "description": "bunyan subscription as a readable stream",
+  "main": "index.js",
+  "files": [
+    "index.js"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/undoZen/bunyan-sub-stream.git"
+  },
+  "keywords": [
+    "bunyan",
+    "logging"
+  ],
+  "author": "undoZen <opensource@undozen.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/undoZen/bunyan-sub-stream/issues"
+  },
+  "homepage": "https://github.com/undoZen/bunyan-sub-stream",
+  "dependencies": {
+    "destroy": "^1.0.3",
+    "dnode": "^1.2.0"
+  }
+}
