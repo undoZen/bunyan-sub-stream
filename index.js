@@ -70,7 +70,7 @@ function SubStream(opts, stream) {
     d.on('error', onerror);
 
     function onerror(err) {
-        console.error('bunyan-sub-stream connection error:', err);
+        //console.error('bunyan-sub-stream connection error:', err);
         that.d.end();
     };
 
@@ -83,10 +83,9 @@ function SubStream(opts, stream) {
             that.close();
             return;
         }
-        console.error('bunyan-sub-stream connection ended');
-        console.error('will try reconnecting in 5s');
+        //console.error('bunyan-sub-stream connection ended');
+        //console.error('will try reconnecting in 5s');
         setTimeout(function () {
-            console.log('lastUpdatedTime', lastUpdatedTime);
             var d = that.d = dnode({
                 log: that.log,
                 getOptions: function (cb) {
