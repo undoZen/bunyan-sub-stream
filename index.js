@@ -108,11 +108,22 @@ function SubStream(opts, stream) {
         }, 5000);
     }
     d.connect(28692);
+
+    function dend() {
+        that.d.removeListener('end', reconnect);
+        that.d.end();
+        destroy(that.d);
+    };
+    that.on('end', dend);
     return that;
 }
 
 SubStream.prototype._read = function () {
     return 0;
+}
+
+SubStream.prototype.close = function () {
+    this.push(null);
 }
 
 module.exports = SubStream;
