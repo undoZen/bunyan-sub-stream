@@ -50,13 +50,18 @@ function SubStream(opts, stream) {
         }
     };
 
+    var sopts = {
+        readHistory: false,
+        minLevel: opts.level,
+    };
+    if (opts.history || opts.time) {
+        sopts.readHistory = true;
+        sopts.historyStartTime = ~~opts.time ? opts.time : void 0;
+    }
     var d = that.d = dnode({
         log: that.log,
         getOptions: function (cb) {
-            cb({
-                readHistory: false,
-                minLevel: opts.level,
-            });
+            cb(sopts);
         }
     });
 
