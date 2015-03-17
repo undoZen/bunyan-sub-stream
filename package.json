@@ -1,6 +1,6 @@
 {
   "name": "bunyan-sub-stream",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "bunyan subscription as a readable stream",
   "main": "index.js",
   "files": [
