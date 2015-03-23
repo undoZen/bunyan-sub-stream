@@ -1,7 +1,6 @@
 'use strict';
 var net = require('net');
 var util = require('util');
-var dnode = require('dnode');
 var destroy = require('destroy');
 var Readable = require('stream').Readable;
 
@@ -28,6 +27,22 @@ function getLevel(level) {
     return level;
 }
 
+function isValidRecord(rec) {
+    if (!rec ||
+        rec.v == null ||
+        rec.level == null ||
+        rec.name == null ||
+        rec.hostname == null ||
+        rec.pid == null ||
+        rec.time == null ||
+        rec.msg == null) {
+        // Not valid Bunyan log.
+        return false;
+    } else {
+        return true;
+    }
+}
+
 util.inherits(SubStream, Readable);
 
 function SubStream(opts, stream) {
@@ -41,80 +56,101 @@ function SubStream(opts, stream) {
     opts.level = getLevel(opts.level);
     Readable.apply(that, args);
     var lastUpdatedTime = Date.now();
-    that.log = function (rec) {
-        lastUpdatedTime = (new Date(rec.time)).valueOf();
-        if (opts.objectMode) {
-            that.push(rec);
-        } else {
-            that.push(JSON.stringify(rec) + '\n', 'utf-8');
-        }
-    };
 
     var sopts = {
-        readHistory: false,
-        minLevel: opts.level,
+        cmd: 'subscribe',
+        history: false,
+        level: opts.level,
     };
     if (opts.history || opts.time) {
-        sopts.readHistory = true;
-        sopts.historyStartTime = ~~opts.time ? opts.time : void 0;
+        sopts.history = true;
+        sopts.time = ~~opts.time ? opts.time : void 0;
     }
-    var d = that.d = dnode({
-        log: that.log,
-        getOptions: function (cb) {
-            cb(sopts);
-        }
-    });
+    var socket = that.socket = net.connect(28692);
+    socket.on('connect', onconnect);
+    socket.on('data', ondata);
+    socket.on('error', onerror);
+    //socket.on('end', onend);
+    socket.on('close', reconnect);
 
-    d.on('remote', onremote);
     var retryCount = 0;
+    var firstTimeConnection = true;
+    var bufs = [];
 
-    function onremote(remote) {
+    function onconnect(remote) {
         retryCount = 0;
+        bufs = [];
+        that.socket.write(JSON.stringify(firstTimeConnection ?
+            sopts : {
+                cmd: 'subscribe',
+                history: true,
+                time: lastUpdatedTime + 1,
+                level: opts.level,
+            }
+        ) + '\n');
     };
 
-    d.on('error', onerror);
+    function ondata(data) {
+        //console.error('bunyan-sub-stream connection error:', err);
+        var index, buf, rec;
+        while ((index = data.indexOf(10)) > -1) {
+            buf = Buffer.concat(bufs.concat([data.slice(0, index)]));
+            data = data.slice(index + 1);
+            try {
+                rec = JSON.parse(buf.toString('utf-8'));
+            } finally {
+                if (isValidRecord(rec)) {
+                    lastUpdatedTime = (new Date(rec.time)).valueOf();
+                    if (opts.objectMode) {
+                        that.push(rec);
+                    } else {
+                        that.push(JSON.stringify(rec) + '\n', 'utf-8');
+                    }
+                }
+            }
+        }
+        if (data.length) {
+            bufs.push(data);
+        }
+    };
 
     function onerror(err) {
-        //console.error('bunyan-sub-stream connection error:', err);
-        that.d.end();
+        console.error('bunyan-sub-stream connection error:', err);
+        that.socket.end();
     };
 
-    d.on('end', reconnect);
+    function onend() {
+        console.error('bunyan-sub-stream connection end');
+        that.socket.close();
+    };
 
     function reconnect() {
-        destroy(that.d);
+        console.log('recon');
+        destroy(that.socket);
         if (++retryCount > 20) {
             console.error('can not connect to bunyan-hub for 1 minute, abort.');
             that.close();
             return;
         }
-        //console.error('bunyan-sub-stream connection ended');
-        //console.error('will try reconnecting in 5s');
+        firstTimeConnection = false;
+        console.error('bunyan-sub-stream connection ended');
+        console.error('will try reconnecting in 5s');
         setTimeout(function () {
-            var d = that.d = dnode({
-                log: that.log,
-                getOptions: function (cb) {
-                    cb({
-                        readHistory: true,
-                        historyStartTime: lastUpdatedTime + 1,
-                        minLevel: opts.level,
-                    });
-                }
-            });
-            d.on('remote', onremote);
-            d.on('error', onerror);
-            d.on('end', reconnect);
-            d.connect(28692);
+            var socket = that.socket = net.connect(28692);
+            socket.on('connect', onconnect);
+            socket.on('data', ondata);
+            socket.on('error', onerror);
+            //socket.on('end', onend);
+            socket.on('close', reconnect);
         }, 5000);
     }
-    d.connect(28692);
 
-    function dend() {
-        that.d.removeListener('end', reconnect);
-        that.d.end();
-        destroy(that.d);
+    function endSocket() {
+        that.socket.removeListener('close', reconnect);
+        that.socket.end();
+        destroy(that.socket);
     };
-    that.on('end', dend);
+    that.on('end', endSocket);
     return that;
 }
 
