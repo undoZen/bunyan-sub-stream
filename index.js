@@ -115,26 +115,27 @@ function SubStream(opts, stream) {
     };
 
     function onerror(err) {
-        console.error('bunyan-sub-stream connection error:', err);
+        process.stderr.write('bunyan-sub-stream connection error:' +
+            util.inspect(err) + '\n');
         that.socket.end();
     };
 
     function onend() {
-        console.error('bunyan-sub-stream connection end');
+        process.stderr.write('bunyan-sub-stream connection end\n');
         that.socket.close();
     };
 
     function reconnect() {
-        console.log('recon');
         destroy(that.socket);
         if (++retryCount > 20) {
-            console.error('can not connect to bunyan-hub for 1 minute, abort.');
+            process.stderr.write(
+                'can not connect to bunyan-hub for 1 minute, abort.\n');
             that.close();
             return;
         }
         firstTimeConnection = false;
-        console.error('bunyan-sub-stream connection ended');
-        console.error('will try reconnecting in 5s');
+        process.stderr.write('bunyan-sub-stream connection ended\n');
+        process.stderr.write('will try reconnecting in 5s\n');
         setTimeout(function () {
             var socket = that.socket = net.connect(28692);
             socket.on('connect', onconnect);
