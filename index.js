@@ -95,6 +95,7 @@ function SubStream(opts, stream) {
         var index, buf, rec;
         while ((index = data.indexOf(10)) > -1) {
             buf = Buffer.concat(bufs.concat([data.slice(0, index)]));
+            bufs = [];
             data = data.slice(index + 1);
             try {
                 rec = JSON.parse(buf.toString('utf-8'));
