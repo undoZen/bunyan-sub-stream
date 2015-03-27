@@ -101,8 +101,10 @@ function SubStream(opts, stream) {
                 rec = JSON.parse(buf.toString('utf-8'));
             } finally {
                 if (isValidRecord(rec)) {
-                    lastUpdatedTime = (new Date(rec.time)).valueOf();
+                    var time = new Date(rec.time);
+                    lastUpdatedTime = time.valueOf();
                     if (opts.objectMode) {
+                        rec.time = time;
                         that.push(rec);
                     } else {
                         that.push(JSON.stringify(rec) + '\n', 'utf-8');
