@@ -16,6 +16,8 @@ var subStream = new SubStream({
     history: true, // read history, bunyan-hub will keep 1000 records for each level, default false
     time: timestamp, // if history is true, set time when the records emitted from history read, default undefined
     raw: false, // if set to true, subStream will be in objectMode and emit record object, defaults to false
+    host: '127.0.0.1', // defaults to localhost
+    port: 28692, // defaults to be bunyan-hub's default port
 });
 subStream.on('data', console.log.bind(console, 'data'));
 subStream.pipe(process.stdout);

@@ -66,7 +66,15 @@ function SubStream(opts, stream) {
         sopts.history = true;
         sopts.time = ~~opts.time ? opts.time : void 0;
     }
-    var socket = that.socket = net.connect(28692);
+    var port = 28692;
+    if (typeof opts.port === 'number') {
+        port = opts.port;
+    }
+    var host = '127.0.0.1';
+    if (typeof opts.host === 'string') {
+        host = opts.host;
+    }
+    var socket = that.socket = net.connect(port, host);
     socket.on('connect', onconnect);
     socket.on('data', ondata);
     socket.on('error', onerror);
@@ -140,7 +148,7 @@ function SubStream(opts, stream) {
         process.stderr.write('bunyan-sub-stream connection ended\n');
         process.stderr.write('will try reconnecting in 5s\n');
         setTimeout(function () {
-            var socket = that.socket = net.connect(28692);
+            var socket = that.socket = net.connect(port, host);
             socket.on('connect', onconnect);
             socket.on('data', ondata);
             socket.on('error', onerror);
